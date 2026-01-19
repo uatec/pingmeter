@@ -7,6 +7,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var recentPings: [Double] = []
     let windowSize = 5
 
+    var launchAtLoginItem: NSMenuItem!
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         // Create the status item
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
@@ -25,6 +27,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let helloItem = NSMenuItem(title: "Hello World", action: #selector(helloWorldClicked), keyEquivalent: "")
         helloItem.target = self
         menu.addItem(helloItem)
+        
+        // Add "Launch at Login" item
+        launchAtLoginItem = NSMenuItem(title: "Launch at Login", action: #selector(toggleLaunchAtLogin), keyEquivalent: "")
+        launchAtLoginItem.target = self
+        launchAtLoginItem.state = LaunchAgentManager.shared.isEnabled() ? .on : .off
+        menu.addItem(launchAtLoginItem)
         
         // Add separator
         menu.addItem(NSMenuItem.separator())
@@ -60,11 +68,16 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             do {
                 try task.run()
                 let data = pipe.fileHandleForReading.readDataToEndOfFile()
-                if let output = String(data: data, encoding: .utf8) {
+                if let output = String(data: data, encoding: .utf8), !output.isEmpty {
                     self.parsePingOutput(output)
+                } else {
+                    self.parsePingOutput("") // Treat empty output as failure
                 }
             } catch {
                 print("Failed to run ping: \(error)")
+                DispatchQueue.main.async {
+                    self.handlePingFailure()
+                }
             }
         }
     }
@@ -83,7 +96,26 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 DispatchQueue.main.async {
                     self.updateAverage(timeMs)
                 }
+            } else {
+                DispatchQueue.main.async {
+                    self.handlePingFailure()
+                }
             }
+        } else {
+            // "time=" not found, likely a timeout or error
+            DispatchQueue.main.async {
+                self.handlePingFailure()
+            }
+        }
+    }
+    
+    func handlePingFailure() {
+        // Clear recent pings so that when we reconnect, we start fresh
+        // instead of averaging with old values.
+        recentPings.removeAll()
+        
+        if let button = statusItem.button {
+            button.title = " -.- ms"
         }
     }
     
@@ -109,8 +141,63 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         alert.runModal()
     }
     
+    @objc func toggleLaunchAtLogin() {
+        if LaunchAgentManager.shared.isEnabled() {
+            LaunchAgentManager.shared.disable()
+            launchAtLoginItem.state = .off
+        } else {
+            LaunchAgentManager.shared.enable()
+            launchAtLoginItem.state = .on
+        }
+    }
+    
     @objc func exitClicked() {
         NSApplication.shared.terminate(nil)
+    }
+}
+
+class LaunchAgentManager {
+    static let shared = LaunchAgentManager()
+    
+    private let label = "com.uatec.pingmeter"
+    
+    private var plistUrl: URL? {
+        guard let libraryDir = FileManager.default.urls(for: .libraryDirectory, in: .userDomainMask).first else { return nil }
+        let launchAgentsDir = libraryDir.appendingPathComponent("LaunchAgents")
+        
+        // Ensure directory exists
+        try? FileManager.default.createDirectory(at: launchAgentsDir, withIntermediateDirectories: true)
+        
+        return launchAgentsDir.appendingPathComponent("\(label).plist")
+    }
+    
+    func isEnabled() -> Bool {
+        guard let url = plistUrl else { return false }
+        return FileManager.default.fileExists(atPath: url.path)
+    }
+    
+    func enable() {
+        guard let url = plistUrl else { return }
+        guard let executablePath = Bundle.main.executablePath else { return }
+        
+        let plistContent: [String: Any] = [
+            "Label": label,
+            "ProgramArguments": [executablePath],
+            "RunAtLoad": true,
+            "KeepAlive": false
+        ]
+        
+        do {
+            let data = try PropertyListSerialization.data(fromPropertyList: plistContent, format: .xml, options: 0)
+            try data.write(to: url)
+        } catch {
+            print("Failed to enable launch at login: \(error)")
+        }
+    }
+    
+    func disable() {
+        guard let url = plistUrl else { return }
+        try? FileManager.default.removeItem(at: url)
     }
 }
 

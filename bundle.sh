@@ -42,4 +42,9 @@ cat > "$OUTPUT_DIR/$APP_NAME.app/Contents/Info.plist" <<EOF
 </plist>
 EOF
 
+EOF
+
+echo "Signing app bundle..."
+codesign --force --deep --sign - "$OUTPUT_DIR/$APP_NAME.app"
+
 echo "Done! $OUTPUT_DIR/$APP_NAME.app created."

@@ -159,7 +159,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 class LaunchAgentManager {
     static let shared = LaunchAgentManager()
     
-    private let label = "com.uatec.pingmeter"
+    private let label = "io.neutrino.pingmeter"
     
     private var plistUrl: URL? {
         guard let libraryDir = FileManager.default.urls(for: .libraryDirectory, in: .userDomainMask).first else { return nil }

@@ -2,7 +2,7 @@
 
 APP_NAME="PingMeter"
 EXECUTABLE_NAME="pingmeter"
-BUNDLE_ID="com.uatec.pingmeter"
+BUNDLE_ID="io.neutrino.pingmeter"
 OUTPUT_DIR="dist"
 
 echo "Building release..."

@@ -31,9 +31,9 @@ cat > "$OUTPUT_DIR/$APP_NAME.app/Contents/Info.plist" <<EOF
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>
-    <string>1.0</string>
+    <string>${MARKETING_VERSION:-1.0}</string>
     <key>CFBundleVersion</key>
-    <string>1</string>
+    <string>${PROJECT_VERSION:-1}</string>
     <key>LSMinimumSystemVersion</key>
     <string>11.0</string>
     <key>LSUIElement</key>

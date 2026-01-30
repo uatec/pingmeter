@@ -1,0 +1,49 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  build-and-release:
+    runs-on: macos-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Calculate Version & Create Tag
+        id: version
+        uses: mathieudutour/github-tag-action@v6.1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          default_bump: patch
+          release_branches: master
+
+      - name: Build Application
+        run: |
+          # Use the version from the tag (e.g., 1.2.3 from v1.2.3)
+          VERSION=${{ steps.version.outputs.new_version }}
+          # Use run number or commit count for build number if needed, or just same version
+          BUILD=${{ github.run_number }}
+          
+          echo "Building version $VERSION ($BUILD)"
+          
+          MARKETING_VERSION=$VERSION PROJECT_VERSION=$BUILD ./bundle.sh
+
+      - name: Zip Application
+        run: |
+          cd dist
+          zip -r PingMeter.zip PingMeter.app
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.version.outputs.new_tag }}
+          name: Release ${{ steps.version.outputs.new_version }}
+          files: dist/PingMeter.zip
+          body: ${{ steps.version.outputs.changelog }}

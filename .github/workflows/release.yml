@@ -47,3 +47,26 @@ jobs:
           name: Release ${{ steps.version.outputs.new_version }}
           files: dist/PingMeter.zip
           body: ${{ steps.version.outputs.changelog }}
+
+      - name: Calculate SHA256
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        id: sha256
+        run: |
+          SHA256=$(sha256sum PingMeter.zip | awk '{print $1}')
+          echo "sha256=$SHA256" >> $GITHUB_OUTPUT
+          echo "SHA256: $SHA256"
+
+      - name: Dispatch to Homebrew Tools
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: benc-uk/workflow-dispatch@v1
+        with:
+          workflow: update-formula-cask.yml
+          repo: uatec/homebrew-tools
+          token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          inputs: >-
+            {
+              "name": "pingmeter",
+              "version": "${{ steps.version.outputs.new_tag }}",
+              "url": "https://github.com/uatec/pingmeter/releases/download/${{ steps.version.outputs.new_tag }}/PingMeter.zip",
+              "sha256": "${{ steps.sha256.outputs.sha256 }}"
+            }

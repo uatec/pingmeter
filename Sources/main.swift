@@ -23,11 +23,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // Create the menu
         let menu = NSMenu()
         
-        // Add "Hello World" item
-        let helloItem = NSMenuItem(title: "Hello World", action: #selector(helloWorldClicked), keyEquivalent: "")
-        helloItem.target = self
-        menu.addItem(helloItem)
-        
         // Add "Launch at Login" item
         launchAtLoginItem = NSMenuItem(title: "Launch at Login", action: #selector(toggleLaunchAtLogin), keyEquivalent: "")
         launchAtLoginItem.target = self
@@ -130,15 +125,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         if let button = statusItem.button {
             button.title = String(format: " %.1f ms", average)
         }
-    }
-    
-    @objc func helloWorldClicked() {
-        let alert = NSAlert()
-        alert.messageText = "Hello World"
-        alert.informativeText = "Ping Meter is running!"
-        alert.alertStyle = .informational
-        alert.addButton(withTitle: "OK")
-        alert.runModal()
     }
     
     @objc func toggleLaunchAtLogin() {

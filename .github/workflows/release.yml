@@ -41,7 +41,7 @@ jobs:
           zip -r PingMeter.zip PingMeter.app
 
       - name: Create Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ steps.version.outputs.new_tag }}
           name: Release ${{ steps.version.outputs.new_version }}
